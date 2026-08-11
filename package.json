@@ -1,0 +1,40 @@
+{
+  "name": "pokemap-widget",
+  "version": "0.1.0",
+  "description": "Нужно сделать виджет: карта города с точками из OpenStreetMap, которые игрок собирает, подходя к ним ближе заданного радиуса. Виджет поставляется одним JS-файлом и встраивается в чужую страницу, которую вы не контролируете.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n build,serve -c cyan,green \"vite build --watch --mode development\" \"node scripts/server.mjs\"",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shadxwkxw/fe-testcase-2026.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/shadxwkxw/fe-testcase-2026/issues"
+  },
+  "homepage": "https://github.com/shadxwkxw/fe-testcase-2026#readme",
+  "private": "true",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^6.0.5",
+    "concurrently": "^10.0.4",
+    "typescript": "^6.0.3",
+    "vite": "^8.2.1"
+  }
+}

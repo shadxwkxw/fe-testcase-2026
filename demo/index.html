@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CraftPage — редактор страницы (dev)</title>
+
+    <!--
+      Дев-копия корневого host-page.html.
+
+      Оригинал НЕ изменён: по условиям задания файлы окружения при проверке
+      заменяются на исходные, поэтому правки в них бессмысленны. Отличий от
+      оригинала ровно четыре: заголовок, два пути к окружению (относительные
+      стали абсолютными, потому что страница отдаётся из /demo/) и подключение
+      своего бандла вместо образцовой заглушки.
+    -->
+
+    <!-- Тема конструктора. Грузится раньше виджета и перебивает его стили. -->
+    <link rel="stylesheet" href="/host/cms-theme.css" />
+
+    <!--
+      Рантайм конструктора. Грузится синхронно в head: ему нужно
+      проинструментировать окружение до того, как поднимется виджет.
+    -->
+    <script src="/host/cms-engine.js"></script>
+  </head>
+
+  <body>
+    <header class="cms-header">
+      <span class="cms-header__brand">CraftPage</span>
+      <span>Страница: «Городские активности»</span>
+      <span class="cms-header__spacer"></span>
+
+      <span style="opacity: 0.6">масштаб полотна:</span>
+      <button class="cms-btn" data-scale="1">100%</button>
+      <button class="cms-btn" data-scale="0.8">80%</button>
+      <button class="cms-btn" data-scale="1.25">125%</button>
+
+      <button class="cms-btn" id="cms-btn-sidebar">панель</button>
+      <button class="cms-btn" id="cms-btn-rebuild">пересобрать блок</button>
+      <button class="cms-btn" id="cms-btn-stress">стресс-тест ×5</button>
+      <button class="cms-btn" id="cms-btn-baseline">снять baseline</button>
+    </header>
+
+    <div class="cms-body" id="cms-body">
+      <aside class="cms-sidebar">
+        <b>Структура страницы</b>
+        <div>▸ Блок #1 · Текст</div>
+        <div>▸ Блок #2 · Карта активностей</div>
+        <div>▸ Блок #3 · Текст</div>
+        <hr />
+        <div style="color: #7c8798">
+          Панель сворачивается — ширина полотна при этом меняется без перезагрузки.
+        </div>
+      </aside>
+
+      <main class="cms-viewport">
+        <div id="cms-canvas">
+          <div class="cms-block">
+            <div class="cms-block__title">Блок #1 · Текст</div>
+            <div class="cms-text-block">
+              Заголовок лендинга, который сверстал контент-менеджер. Ваш виджет живёт
+              на этой же странице и не должен ломать соседние блоки — как и они его.
+            </div>
+          </div>
+
+          <!-- Блок #2 с виджетом появится здесь примерно через 2 секунды -->
+
+          <div id="cms-canvas-tail">
+            <div class="cms-block">
+              <div class="cms-block__title">Блок #3 · Текст</div>
+              <div class="cms-text-block">
+                Футер страницы. Если после монтирования виджета этот блок уехал,
+                перекрылся или начал скакать — это регрессия.
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="cms-diag">
+      <h4>Диагностика окружения</h4>
+      <div id="cms-diag-body"></div>
+      <pre class="cms-diag__log" id="cms-diag-log"></pre>
+    </div>
+
+    <!--
+      ======================================================================
+      СЮДА ПОДКЛЮЧАЕТСЯ ВАШ ВИДЖЕТ. Ровно один тег script, без модулей.
+
+      По умолчанию подключена образцовая заглушка reference-widget.js —
+      она демонстрирует контракт mount/unmount и наглядно показывает,
+      как окружение ломает геометрию. Замените её на свой бандл:
+
+          <script src="../dist/pokemap-widget.umd.js"></script>
+      ======================================================================
+    -->
+    <script src="/dist/pokemap-widget.umd.js"></script>
+  </body>
+</html>
