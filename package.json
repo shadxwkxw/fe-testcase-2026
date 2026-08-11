@@ -36,5 +36,8 @@
     "concurrently": "^10.0.4",
     "typescript": "^6.0.3",
     "vite": "^8.2.1"
+  },
+  "engines": {
+    "node": ">=20.11"
   }
 }
