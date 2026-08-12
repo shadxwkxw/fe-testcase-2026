@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 
+import type { LngLat } from '../types';
 import type { GamePoint } from './points';
 import { PointsLoader, type LoaderStatus } from './pointsLoader';
 
@@ -22,6 +23,7 @@ const EMPTY_STATUS: LoaderStatus = {
   cellsFailed: 0,
   tooFarOut: false,
   total: 0,
+  enriched: 0,
 };
 
 /**
@@ -62,18 +64,25 @@ export function usePoints(map: MapLibreMap | null, apiBaseUrl: string): UsePoint
       return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
     };
 
+    // Пока маркера игрока нет — приоритет обогащения от центра карты.
+    // На этапе с игроком сюда поедет его позиция
+    const readFocus = (): LngLat => {
+      const c = map.getCenter();
+      return [c.lng, c.lat];
+    };
+
     const scheduleSync = (): void => {
       window.clearTimeout(debounceId);
       // Во время панорамирования moveend приходит часто, а нас интересует
       // только то место, где карта в итоге остановилась
       debounceId = window.setTimeout(() => {
-        void loader.syncBounds(readBounds());
+        void loader.sync(readBounds(), readFocus());
       }, DEBOUNCE_MS);
     };
 
     map.on('moveend', scheduleSync);
     // moveend не придёт, пока карту не тронут — стартовую область грузим сами
-    void loader.syncBounds(readBounds());
+    void loader.sync(readBounds(), readFocus());
 
     return () => {
       window.clearTimeout(debounceId);

@@ -55,3 +55,31 @@ export function classifyRarity(type: string | undefined, hasThumbnail: boolean):
 export function basePointsFor(rarity: Rarity): number {
   return RARITY_POINTS[rarity];
 }
+
+export interface PointEnrichment {
+  readonly thumbnailUrl: string | undefined;
+  readonly description: string | undefined;
+}
+
+/**
+ * Применяет догруженные данные и пересчитывает редкость
+ *
+ * До обогащения редкость известна только по типу, поэтому она может лишь
+ * вырасти: landmark поднимется с epic до legendary, объект без типа —
+ * с common до rare. Понизиться не может, потому что обе ветки таблицы,
+ * зависящие от миниатюры, дают более высокий ранг
+ *
+ * Отсюда важное следствие: промежуточное состояние безопасно, игрок не
+ * потеряет очки из-за того, что картинка приехала позже
+ */
+export function withEnrichment(point: GamePoint, data: PointEnrichment): GamePoint {
+  const rarity = classifyRarity(point.type, data.thumbnailUrl !== undefined);
+  return {
+    ...point,
+    description: data.description,
+    thumbnailUrl: data.thumbnailUrl,
+    rarity,
+    basePoints: basePointsFor(rarity),
+    enriched: true,
+  };
+}

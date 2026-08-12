@@ -46,7 +46,7 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
       {state.phase === 'ready' && (
         <div className="pokemap-debug">
           масштаб ×{scale.toFixed(2)} · pixelRatio {map ? map.getPixelRatio().toFixed(2) : '—'} ·
-          точек {pointsStatus.total} · ячеек {pointsStatus.cellsLoaded}
+          точек {pointsStatus.total} ({pointsStatus.enriched} с карт.) · ячеек {pointsStatus.cellsLoaded}
           {pointsStatus.loading ? ' · загрузка' : ''}
           {pointsStatus.tooFarOut ? ' · приблизьте карту' : ''}
           {pointsStatus.cellsFailed > 0 ? ` · сбоев ${pointsStatus.cellsFailed}` : ''}

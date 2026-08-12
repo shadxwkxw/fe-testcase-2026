@@ -1,8 +1,24 @@
 import type { CellBBox } from './grid';
 import { fetchJson } from './httpClient';
-import { basePointsFor, classifyRarity, isPlayableType, type GamePoint } from './points';
+import {
+  basePointsFor,
+  classifyRarity,
+  isPlayableType,
+  type GamePoint,
+  type PointEnrichment,
+} from './points';
 
 const GEOSEARCH_LIMIT = 500;
+
+/**
+ * Жёсткий предел числа pageids в одном запросе
+ *
+ * Это обрыв, а не рекомендация: при 50 id приходит 50 страниц, при 51 —
+ * ноль страниц и error: toomanyvalues. Если разбирать ответ наивно, читая
+ * только query.pages, это выглядит как «у статей нет картинок». Проверено
+ * запросом к живому API
+ */
+export const ENRICH_BATCH_LIMIT = 50;
 
 export interface FetchCellResult {
   readonly points: readonly GamePoint[];
@@ -122,4 +138,72 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
+}
+
+/**
+ * Второй, ленивый запрос: миниатюры и описания для конкретных страниц
+ *
+ * list=geosearch отдаёт только геометрию, поэтому картинки берутся отдельно.
+ * Это не обходной манёвр, а то, что задание называет ленивой загрузкой:
+ * обогащаются не все точки города, а ближайшие к игроку
+ */
+export function buildEnrichUrl(apiBaseUrl: string, pageIds: readonly string[]): string {
+  const url = new URL(`${apiBaseUrl}/w/api.php`);
+  url.search = new URLSearchParams({
+    action: 'query',
+    format: 'json',
+    origin: '*',
+    formatversion: '2',
+    pageids: pageIds.join('|'),
+    prop: 'pageimages|description',
+    piprop: 'thumbnail',
+    // 240, а не 96: этой картинкой будет заполняться карточка точки
+    pithumbsize: '240',
+  }).toString();
+  return url.toString();
+}
+
+export async function enrichPoints(
+  apiBaseUrl: string,
+  pageIds: readonly string[],
+  signal: AbortSignal,
+): Promise<ReadonlyMap<string, PointEnrichment>> {
+  if (pageIds.length === 0) return new Map();
+  if (pageIds.length > ENRICH_BATCH_LIMIT) {
+    throw new Error(`запрошено ${pageIds.length} страниц при лимите ${ENRICH_BATCH_LIMIT}`);
+  }
+
+  return parseEnrichPayload(await fetchJson(buildEnrichUrl(apiBaseUrl, pageIds), signal));
+}
+
+export function parseEnrichPayload(payload: unknown): ReadonlyMap<string, PointEnrichment> {
+  const result = new Map<string, PointEnrichment>();
+  if (!isRecord(payload)) return result;
+
+  if (isRecord(payload.error)) {
+    const info = typeof payload.error.info === 'string' ? payload.error.info : 'неизвестная ошибка';
+    throw new Error(`запрос миниатюр: ${info}`);
+  }
+
+  const query = payload.query;
+  if (!isRecord(query)) return result;
+
+  const raw = query.pages;
+  const pages: unknown[] = Array.isArray(raw) ? raw : isRecord(raw) ? Object.values(raw) : [];
+
+  for (const page of pages) {
+    if (!isRecord(page)) continue;
+    const pageid = page.pageid;
+    if (typeof pageid !== 'number') continue;
+
+    // Страницы может не быть вовсе: missing: true, полей нет
+    const thumbnail = isRecord(page.thumbnail) ? page.thumbnail : undefined;
+
+    result.set(String(pageid), {
+      thumbnailUrl: typeof thumbnail?.source === 'string' ? thumbnail.source : undefined,
+      description: typeof page.description === 'string' ? page.description : undefined,
+    });
+  }
+
+  return result;
 }
