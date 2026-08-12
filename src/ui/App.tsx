@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 
 import { DEFAULT_CITY, DEFAULT_ZOOM, STYLE_URLS } from '../config';
+import { useHostGeometry } from '../map/useHostGeometry';
 import { useMapInstance } from '../map/useMapInstance';
 import type { PokeMapConfig } from '../types';
 import type { DisposeBag } from '../runtime/lifecycle';
@@ -16,7 +17,7 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const city = useMemo(() => config.city ?? DEFAULT_CITY, [config.city]);
 
-  const { state } = useMapInstance({
+  const { map, state } = useMapInstance({
     containerRef,
     shadow,
     initialCenter: city.center,
@@ -26,6 +27,8 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
       config.onEvent?.({ type: 'error', scope: 'map', message });
     },
   });
+
+  const scale = useHostGeometry(map, containerRef);
 
   useEffect(() => {
     if (state.phase !== 'ready') return;
@@ -37,6 +40,12 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
       <div className="pokemap-map" ref={containerRef} />
 
       {state.phase === 'loading' && <div className="pokemap-overlay">загрузка карты…</div>}
+
+      {state.phase === 'ready' && (
+        <div className="pokemap-debug">
+          масштаб ×{scale.toFixed(2)} · pixelRatio {map ? map.getPixelRatio().toFixed(2) : '—'}
+        </div>
+      )}
 
       {state.phase === 'error' && (
         <div className="pokemap-overlay pokemap-overlay--error">

@@ -53,3 +53,18 @@
 .pokemap-overlay--error {
   color: #ff9d9d;
 }
+
+/* Временная панель наблюдения за геометрией. absolute, а не fixed:
+   у #cms-canvas стоит transform, и fixed прилип бы к полотну, а не к вьюпорту */
+.pokemap-debug {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(8, 12, 20, 0.72);
+  color: #9fb4d6;
+  font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  pointer-events: none;
+}

@@ -48,4 +48,11 @@ declare global {
   interface Window {
     PokeMapWidget: PokeMapWidgetApi;
   }
+
+  /** События конструктора: типизируем, чтобы detail не был any */
+  interface WindowEventMap {
+    'cms:layout-changed': CustomEvent<{ sidebarOpen: boolean }>;
+    'cms:block-rendered': CustomEvent<{ slot: HTMLElement; widget: string }>;
+    'cms:block-destroyed': CustomEvent<{ widget: string }>;
+  }
 }
