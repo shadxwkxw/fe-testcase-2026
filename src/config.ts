@@ -1,4 +1,4 @@
-import type { PokeMapCity } from './types';
+import type { PokeMapCity, Rarity } from './types';
 
 /**
  * Центры городов из docs/DATA.MD, переставленные в порядок MapLibre
@@ -23,3 +23,13 @@ export const STYLE_URLS = [
 ] as const;
 
 export const DEFAULT_ZOOM = 14;
+
+export const DEFAULT_API_BASE_URL = 'https://ru.wikipedia.org';
+
+/** Базовые очки по редкости — таблица из docs/DATA.MD */
+export const RARITY_POINTS: Record<Rarity, number> = {
+  legendary: 150,
+  epic: 60,
+  rare: 25,
+  common: 10,
+};

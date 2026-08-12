@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 
-import { DEFAULT_CITY, DEFAULT_ZOOM, STYLE_URLS } from '../config';
+import { DEFAULT_API_BASE_URL, DEFAULT_CITY, DEFAULT_ZOOM, STYLE_URLS } from '../config';
+import { usePoints } from '../data/usePoints';
 import { useHostGeometry } from '../map/useHostGeometry';
 import { useMapInstance } from '../map/useMapInstance';
 import type { PokeMapConfig } from '../types';
@@ -29,6 +30,7 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
   });
 
   const scale = useHostGeometry(map, containerRef);
+  const { status: pointsStatus } = usePoints(map, config.apiBaseUrl ?? DEFAULT_API_BASE_URL);
 
   useEffect(() => {
     if (state.phase !== 'ready') return;
@@ -43,7 +45,11 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
 
       {state.phase === 'ready' && (
         <div className="pokemap-debug">
-          масштаб ×{scale.toFixed(2)} · pixelRatio {map ? map.getPixelRatio().toFixed(2) : '—'}
+          масштаб ×{scale.toFixed(2)} · pixelRatio {map ? map.getPixelRatio().toFixed(2) : '—'} ·
+          точек {pointsStatus.total} · ячеек {pointsStatus.cellsLoaded}
+          {pointsStatus.loading ? ' · загрузка' : ''}
+          {pointsStatus.tooFarOut ? ' · приблизьте карту' : ''}
+          {pointsStatus.cellsFailed > 0 ? ` · сбоев ${pointsStatus.cellsFailed}` : ''}
         </div>
       )}
 
