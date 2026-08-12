@@ -7,6 +7,7 @@
  * стоит, иначе обёртка тут же перезапишет присвоенное своим объектом.
  */
 import { startAutoMount } from './runtime/autoMount';
+import { warmUpReact } from './runtime/reactWarmUp';
 import { mount, unmount } from './runtime/registry';
 
 export type {
@@ -22,4 +23,6 @@ export type {
 export const version: string = __WIDGET_VERSION__;
 export { mount, unmount };
 
+// Порядок важен: прогрев должен успеть до того, как движок снимет baseline
+warmUpReact();
 startAutoMount();
