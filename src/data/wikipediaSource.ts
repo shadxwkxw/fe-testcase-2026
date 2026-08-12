@@ -1,8 +1,8 @@
 import type { CellBBox } from './grid';
+import { fetchJson } from './httpClient';
 import { basePointsFor, classifyRarity, isPlayableType, type GamePoint } from './points';
 
 const GEOSEARCH_LIMIT = 500;
-const REQUEST_TIMEOUT_MS = 10_000;
 
 export interface FetchCellResult {
   readonly points: readonly GamePoint[];
@@ -47,14 +47,8 @@ export async function fetchCellPoints(
   bbox: CellBBox,
   signal: AbortSignal,
 ): Promise<FetchCellResult> {
-  const response = await fetch(buildGeoSearchUrl(apiBaseUrl, bbox), {
-    signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
-    headers: { accept: 'application/json' },
-  });
-
-  if (!response.ok) throw new Error(`GeoSearch вернул HTTP ${response.status}`);
-
-  return parseGeoSearchPayload(await response.json());
+  // Через общую очередь: темп, паузы и повторы на 429 живут в httpClient
+  return parseGeoSearchPayload(await fetchJson(buildGeoSearchUrl(apiBaseUrl, bbox), signal));
 }
 
 /**
