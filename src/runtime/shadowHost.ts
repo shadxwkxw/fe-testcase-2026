@@ -13,7 +13,14 @@ export interface ShadowHost {
   /** Контейнер внутри тени, в него рендерится React */
   readonly container: HTMLElement;
   readonly shadowRoot: ShadowRoot;
-  adoptStyles(css: string): void;
+  /**
+   * order: 'library' кладёт таблицу ПЕРЕД нашими стилями
+   *
+   * Правила библиотек и наши часто имеют одинаковую специфичность
+   * (.maplibregl-map против .pokemap-map — по одному классу), и тогда исход
+   * решает порядок в документе. Библиотечные идут первыми, наши последними
+   */
+  adoptStyles(css: string, order?: 'library' | 'widget'): void;
 }
 
 export function createShadowHost(host: HTMLElement, bag: DisposeBag): ShadowHost {
@@ -28,10 +35,16 @@ export function createShadowHost(host: HTMLElement, bag: DisposeBag): ShadowHost
 
   const shadowRoot = mountPoint.attachShadow({ mode: 'open' });
 
-  const adoptStyles = (css: string): void => {
+  const adoptStyles = (css: string, order: 'library' | 'widget' = 'widget'): void => {
     const style = document.createElement('style');
     style.textContent = css;
-    shadowRoot.appendChild(style);
+
+    if (order === 'library') {
+      shadowRoot.insertBefore(style, shadowRoot.firstChild);
+    } else {
+      shadowRoot.appendChild(style);
+    }
+
     bag.add(() => {
       style.remove();
     });

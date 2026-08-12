@@ -30,7 +30,14 @@
   background: #0f1522;
 }
 
-.pokemap-placeholder {
+/* MapLibre верстает холст по clientWidth/clientHeight этого элемента,
+   поэтому размеры у него должны быть определённые */
+.pokemap-map {
+  position: absolute;
+  inset: 0;
+}
+
+.pokemap-overlay {
   position: absolute;
   inset: 0;
   display: flex;
@@ -40,4 +47,9 @@
   justify-content: center;
   font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
   color: #9fb4d6;
+  background: #0f1522;
+}
+
+.pokemap-overlay--error {
+  color: #ff9d9d;
 }
