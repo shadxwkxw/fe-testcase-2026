@@ -6,6 +6,7 @@
  * build.lib.name. Отдельно присваивать window.PokeMapWidget не нужно — и не
  * стоит, иначе обёртка тут же перезапишет присвоенное своим объектом.
  */
+import { startAutoMount } from './runtime/autoMount';
 import { mount, unmount } from './runtime/registry';
 
 export type {
@@ -20,3 +21,5 @@ export type {
 
 export const version: string = __WIDGET_VERSION__;
 export { mount, unmount };
+
+startAutoMount();

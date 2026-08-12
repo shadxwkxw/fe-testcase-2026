@@ -76,3 +76,18 @@ export function unmount(handle: PokeMapHandle): void {
   if (!instance) return;
   instance.bag.dispose();
 }
+
+/**
+ * Размонтирует всё, чей узел уже вынесли из документа
+ *
+ * Конструктор удаляет блок целиком, не сообщая нам. Без этой уборки
+ * экземпляр остался бы жив на открепленном узле: невидимый, но с таймерами
+ * и слушателями
+ */
+export function unmountDetached(): void {
+  for (const instance of [...byHandle.values()]) {
+    if (!instance.handle.host.isConnected) {
+      unmount(instance.handle);
+    }
+  }
+}
