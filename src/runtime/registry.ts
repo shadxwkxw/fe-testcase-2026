@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { App } from '../ui/App';
 import type { PokeMapConfig, PokeMapHandle } from '../types';
 import { DisposeBag } from './lifecycle';
+import { createShadowHost } from './shadowHost';
 
 interface Instance {
   readonly handle: PokeMapHandle;
@@ -49,14 +50,9 @@ export function mount(target: string | HTMLElement, config: PokeMapConfig = {}):
   });
 
   try {
-    const container = document.createElement('div');
-    container.setAttribute('data-pokemap', '');
-    host.appendChild(container);
-    bag.add(() => {
-      container.remove();
-    });
+    const shadow = createShadowHost(host, bag);
 
-    let root: Root | null = createRoot(container);
+    let root: Root | null = createRoot(shadow.container);
     // Добавлен после контейнера, значит разберётся раньше него: эффекты
     // компонентов не должны убираться на уже открепленном поддереве
     bag.add(() => {
@@ -65,7 +61,7 @@ export function mount(target: string | HTMLElement, config: PokeMapConfig = {}):
       current?.unmount();
     });
 
-    root.render(createElement(App, { config, bag }));
+    root.render(createElement(App, { config, shadow, bag }));
   } catch (error) {
     bag.dispose();
     throw error;

@@ -2,9 +2,11 @@ import { useEffect } from 'react';
 
 import type { PokeMapConfig } from '../types';
 import type { DisposeBag } from '../runtime/lifecycle';
+import type { ShadowHost } from '../runtime/shadowHost';
 
 export interface AppProps {
   readonly config: PokeMapConfig;
+  readonly shadow: ShadowHost;
   readonly bag: DisposeBag;
 }
 

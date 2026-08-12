@@ -1,0 +1,43 @@
+/*
+ * Базовые стили виджета. Живут внутри shadow root, поэтому правила
+ * host-страницы сюда не достают
+ *
+ * Свои ресеты всё равно объявлены явно: виджет не должен зависеть от того,
+ * что за страница его приютила
+ */
+
+:host {
+  display: block;
+  /* Наследуемые свойства (font, color) проходят сквозь границу тени,
+     поэтому задаём их сами */
+  font: 14px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #e8eef8;
+  text-align: left;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.pokemap-root {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #0f1522;
+}
+
+.pokemap-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #9fb4d6;
+}
