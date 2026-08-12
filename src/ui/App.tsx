@@ -2,11 +2,15 @@ import { useEffect, useMemo, useRef } from 'react';
 
 import { DEFAULT_API_BASE_URL, DEFAULT_CITY, DEFAULT_ZOOM, STYLE_URLS } from '../config';
 import { usePoints } from '../data/usePoints';
+import { DEFAULT_COLLECT_RADIUS_METERS } from '../config';
 import { useHostGeometry } from '../map/useHostGeometry';
 import { useMapInstance } from '../map/useMapInstance';
+import { usePointsLayer } from '../map/usePointsLayer';
 import type { PokeMapConfig } from '../types';
 import type { DisposeBag } from '../runtime/lifecycle';
 import type { ShadowHost } from '../runtime/shadowHost';
+
+const EMPTY_SET: ReadonlySet<string> = new Set();
 
 export interface AppProps {
   readonly config: PokeMapConfig;
@@ -30,7 +34,20 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
   });
 
   const scale = useHostGeometry(map, containerRef);
-  const { status: pointsStatus } = usePoints(map, config.apiBaseUrl ?? DEFAULT_API_BASE_URL);
+  const { points, version, status: pointsStatus } = usePoints(
+    map,
+    config.apiBaseUrl ?? DEFAULT_API_BASE_URL,
+  );
+
+  // Игрока ещё нет — доступных точек пока быть не может
+  const { available } = usePointsLayer({
+    map,
+    points,
+    version,
+    collected: EMPTY_SET,
+    player: null,
+    collectRadiusMeters: config.collectRadiusMeters ?? DEFAULT_COLLECT_RADIUS_METERS,
+  });
 
   useEffect(() => {
     if (state.phase !== 'ready') return;
@@ -46,7 +63,7 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
       {state.phase === 'ready' && (
         <div className="pokemap-debug">
           масштаб ×{scale.toFixed(2)} · pixelRatio {map ? map.getPixelRatio().toFixed(2) : '—'} ·
-          точек {pointsStatus.total} ({pointsStatus.enriched} с карт.) · ячеек {pointsStatus.cellsLoaded}
+          точек {pointsStatus.total} ({pointsStatus.enriched} с карт.) · ячеек {pointsStatus.cellsLoaded} · доступно {available.size}
           {pointsStatus.loading ? ' · загрузка' : ''}
           {pointsStatus.tooFarOut ? ' · приблизьте карту' : ''}
           {pointsStatus.cellsFailed > 0 ? ` · сбоев ${pointsStatus.cellsFailed}` : ''}

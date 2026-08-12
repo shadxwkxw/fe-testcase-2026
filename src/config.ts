@@ -24,6 +24,8 @@ export const STYLE_URLS = [
 
 export const DEFAULT_ZOOM = 14;
 
+export const DEFAULT_COLLECT_RADIUS_METERS = 50;
+
 export const DEFAULT_API_BASE_URL = 'https://ru.wikipedia.org';
 
 /** Базовые очки по редкости — таблица из docs/DATA.MD */
