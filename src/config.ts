@@ -28,6 +28,15 @@ export const DEFAULT_COLLECT_RADIUS_METERS = 50;
 
 export const DEFAULT_API_BASE_URL = 'https://ru.wikipedia.org';
 
+/** Комбо: +0.2 за сбор, потолок ×3.0, сброс через 10 с, заморозка на 30 с */
+export const COMBO = {
+  step: 0.2,
+  max: 3,
+  resetAfterMs: 10_000,
+  freezeMs: 30_000,
+  freezeRarities: ['epic', 'legendary'] satisfies readonly Rarity[],
+} as const;
+
 /** Базовые очки по редкости — таблица из docs/DATA.MD */
 export const RARITY_POINTS: Record<Rarity, number> = {
   legendary: 150,

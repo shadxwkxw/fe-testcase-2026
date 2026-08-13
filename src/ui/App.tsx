@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
+import type { MapMouseEvent } from 'maplibre-gl';
 
 import { DEFAULT_API_BASE_URL, DEFAULT_CITY, DEFAULT_ZOOM, STYLE_URLS } from '../config';
 import { usePoints } from '../data/usePoints';
@@ -6,12 +7,12 @@ import { DEFAULT_COLLECT_RADIUS_METERS } from '../config';
 import { useHostGeometry } from '../map/useHostGeometry';
 import { useMapInstance } from '../map/useMapInstance';
 import { usePlayer } from '../map/usePlayer';
-import { usePointsLayer } from '../map/usePointsLayer';
+import { POINTS_LAYER_ID, usePointsLayer } from '../map/usePointsLayer';
+import { useGame } from '../game/useGame';
+import { Hud } from './Hud';
 import type { PokeMapConfig } from '../types';
 import type { DisposeBag } from '../runtime/lifecycle';
 import type { ShadowHost } from '../runtime/shadowHost';
-
-const EMPTY_SET: ReadonlySet<string> = new Set();
 
 export interface AppProps {
   readonly config: PokeMapConfig;
@@ -47,14 +48,46 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
     player.position,
   );
 
+  const game = useGame({ points, onEvent: config.onEvent });
+
   const { available } = usePointsLayer({
     map,
     points,
     version,
-    collected: EMPTY_SET,
+    collected: game.collected,
     player: player.position,
     collectRadiusMeters,
   });
+
+  /* --- сбор по клику -------------------------------------------------- */
+  const collectRef = useRef(game.collect);
+  const availableRef = useRef(available);
+  useEffect(() => {
+    collectRef.current = game.collect;
+    availableRef.current = available;
+  }, [game.collect, available]);
+
+  useEffect(() => {
+    if (!map) return undefined;
+
+    // Обработчик ставится один раз на всё время жизни карты: свежие
+    // available и collect берутся из ref, иначе каждое движение игрока
+    // переподписывало бы слушатель
+    const onClick = (event: MapMouseEvent): void => {
+      if (!map.getLayer(POINTS_LAYER_ID)) return;
+      const [feature] = map.queryRenderedFeatures(event.point, { layers: [POINTS_LAYER_ID] });
+      // properties типизированы как any: значения приходят из GeoJSON
+      const pointId: unknown = feature?.properties?.['pointId'];
+      if (typeof pointId !== 'string') return;
+      if (!availableRef.current.has(pointId)) return;
+      collectRef.current(pointId);
+    };
+
+    map.on('click', onClick);
+    return () => {
+      map.off('click', onClick);
+    };
+  }, [map]);
 
   useEffect(() => {
     if (state.phase !== 'ready') return;
@@ -66,6 +99,15 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
       <div className="pokemap-map" ref={containerRef} />
 
       {state.phase === 'loading' && <div className="pokemap-overlay">загрузка карты…</div>}
+
+      {state.phase === 'ready' && (
+        <Hud
+          score={game.score}
+          collectedCount={game.collected.size}
+          multiplier={game.multiplier}
+          frozen={game.frozen}
+        />
+      )}
 
       {state.phase === 'ready' && (
         <div className="pokemap-debug">
