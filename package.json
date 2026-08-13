@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "concurrently -k -n build,serve -c cyan,green \"vite build --watch --mode development\" \"node scripts/server.mjs\"",
     "build": "tsc --noEmit && vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",
@@ -30,6 +31,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@maplibre/maplibre-gl-style-spec": "^26.2.1",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^26.2.0",
@@ -37,7 +39,10 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^6.0.5",
     "concurrently": "^10.0.4",
+    "eslint": "^10.8.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.67.0",
     "vite": "^8.2.1"
   },
   "engines": {
