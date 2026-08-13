@@ -1,3 +1,10 @@
+import {
+  isCollectRecord,
+  progressFromRecords,
+  type CollectRecord,
+  type ProgressState,
+} from './progress';
+
 /**
  * Сохранение прогресса в localStorage
  *
@@ -11,19 +18,17 @@
  *      будущей версии виджета. Проверяется каждое поле
  *   3. Несовместимая версия не удаляется молча, а игнорируется. Если позже
  *      появится миграция, данные будут на месте
+ *
+ * Версия 2 хранит журнал сборов вместо пары «список точек + счёт»: счёт
+ * теперь выводится из журнала, поэтому рассогласовать его с содержимым
+ * стало невозможно
  */
 
 const STORAGE_KEY = 'pokemap-widget/progress';
-const SCHEMA_VERSION = 1;
-
-export interface Progress {
-  readonly score: number;
-  readonly collected: readonly string[];
-  readonly cityName: string | null;
-}
+const SCHEMA_VERSION = 2;
 
 export type LoadOutcome =
-  | { readonly kind: 'ok'; readonly progress: Progress }
+  | { readonly kind: 'ok'; readonly progress: ProgressState; readonly cityName: string | null }
   | { readonly kind: 'empty' }
   | { readonly kind: 'unavailable'; readonly reason: string }
   | { readonly kind: 'incompatible'; readonly foundVersion: unknown }
@@ -52,37 +57,35 @@ export function loadProgress(): LoadOutcome {
     return { kind: 'incompatible', foundVersion: parsed.version };
   }
 
-  const score = parsed.score;
-  if (typeof score !== 'number' || !Number.isFinite(score) || score < 0) {
-    return { kind: 'corrupt', reason: 'поле score непригодно' };
-  }
-
-  const rawCollected = parsed.collected;
-  if (!Array.isArray(rawCollected)) {
+  const rawRecords = parsed.collected;
+  if (!Array.isArray(rawRecords)) {
     return { kind: 'corrupt', reason: 'поле collected не массив' };
   }
 
+  const resetAt =
+    typeof parsed.resetAt === 'number' && Number.isFinite(parsed.resetAt) ? parsed.resetAt : 0;
+
   // Одна кривая запись не должна обнулить весь прогресс: отбрасываем
   // непригодные элементы, а не всю коллекцию
-  const collected = rawCollected.filter(
-    (id): id is string => typeof id === 'string' && id.length > 0,
-  );
+  const records: CollectRecord[] = rawRecords.filter(isCollectRecord);
 
   return {
     kind: 'ok',
-    progress: {
-      score: Math.floor(score),
-      collected,
-      cityName: typeof parsed.cityName === 'string' ? parsed.cityName : null,
-    },
+    progress: progressFromRecords(records, resetAt),
+    cityName: typeof parsed.cityName === 'string' ? parsed.cityName : null,
   };
 }
 
-export function saveProgress(progress: Progress): boolean {
+export function saveProgress(progress: ProgressState, cityName: string | null): boolean {
   try {
     window.localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ version: SCHEMA_VERSION, ...progress }),
+      JSON.stringify({
+        version: SCHEMA_VERSION,
+        resetAt: progress.resetAt,
+        collected: [...progress.records.values()],
+        cityName,
+      }),
     );
     return true;
   } catch {
@@ -104,7 +107,7 @@ export function clearProgress(): boolean {
 export function describeLoadOutcome(outcome: LoadOutcome): string {
   switch (outcome.kind) {
     case 'ok':
-      return `загружено: ${outcome.progress.collected.length} точек, ${outcome.progress.score} очков`;
+      return `загружено ${outcome.progress.records.size} точек`;
     case 'empty':
       return 'сохранений нет';
     case 'unavailable':

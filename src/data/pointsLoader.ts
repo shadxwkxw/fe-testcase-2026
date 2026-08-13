@@ -62,6 +62,7 @@ export class PointsLoader {
   private lastError: string | null = null;
   private tooFarOut = false;
   private enrichedCount = 0;
+  private readonly enrichingNow = new Set<string>();
 
   constructor(private readonly options: PointsLoaderOptions) {}
 
@@ -160,6 +161,22 @@ export class PointsLoader {
       this.activeRequests -= 1;
       this.publish();
     }
+  }
+
+  /**
+   * Обогатить конкретную точку вне очереди
+   *
+   * Плановое обогащение идёт от игрока наружу, но карточку можно открыть у
+   * точки, до которой очередь ещё не дошла
+   */
+  enrichNow(pointId: string): void {
+    const point = this.points.get(pointId);
+    if (!point || point.enriched || this.enrichingNow.has(pointId)) return;
+
+    this.enrichingNow.add(pointId);
+    void this.enrichBatch([point]).finally(() => {
+      this.enrichingNow.delete(pointId);
+    });
   }
 
   dispose(): void {

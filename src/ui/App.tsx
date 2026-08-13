@@ -10,6 +10,7 @@ import { usePlayer } from '../map/usePlayer';
 import { POINTS_LAYER_ID, usePointsLayer } from '../map/usePointsLayer';
 import { useGame } from '../game/useGame';
 import { Hud } from './Hud';
+import { PointCard } from './PointCard';
 import type { PokeMapConfig } from '../types';
 import type { DisposeBag } from '../runtime/lifecycle';
 import type { ShadowHost } from '../runtime/shadowHost';
@@ -49,7 +50,9 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
 
   // Фокус ленивой подгрузки картинок — позиция игрока: обогащается то,
   // до чего он реально может дойти
-  const { points, version, status: pointsStatus } = usePoints(
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const { points, version, status: pointsStatus, enrichNow } = usePoints(
     map,
     config.apiBaseUrl ?? DEFAULT_API_BASE_URL,
     player.position,
@@ -86,17 +89,21 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
     config.onEvent?.({ type: 'city-changed', city });
   }, [map, cityId, city, moveTo, config]);
 
+  // Смена города уводит игрока за сотни километров — карточка теряет смысл.
+  // Сбрасываем её в обработчике, а не эффектом: это прямое следствие
+  // действия пользователя, а не синхронизация с внешней системой
   const changeCity = useCallback((next: CityId) => {
     setCityId(next);
+    setSelectedId(null);
   }, []);
 
-  /* --- сбор по клику -------------------------------------------------- */
-  const collectRef = useRef(game.collect);
-  const availableRef = useRef(available);
+  const selectedPoint = selectedId === null ? undefined : points.get(selectedId);
+
+  /* --- выбор точки по клику -------------------------------------------------- */
+  const onEventRef = useRef(config.onEvent);
   useEffect(() => {
-    collectRef.current = game.collect;
-    availableRef.current = available;
-  }, [game.collect, available]);
+    onEventRef.current = config.onEvent;
+  }, [config.onEvent]);
 
   useEffect(() => {
     if (!map) return undefined;
@@ -109,9 +116,15 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
       const [feature] = map.queryRenderedFeatures(event.point, { layers: [POINTS_LAYER_ID] });
       // properties типизированы как any: значения приходят из GeoJSON
       const pointId: unknown = feature?.properties?.['pointId'];
-      if (typeof pointId !== 'string') return;
-      if (!availableRef.current.has(pointId)) return;
-      collectRef.current(pointId);
+
+      // Клик мимо точек закрывает карточку
+      if (typeof pointId !== 'string') {
+        setSelectedId(null);
+        return;
+      }
+
+      setSelectedId(pointId);
+      onEventRef.current?.({ type: 'point-selected', pointId });
     };
 
     map.on('click', onClick);
@@ -140,6 +153,20 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
           cityId={cityId}
           onCityChange={changeCity}
           onReset={game.reset}
+        />
+      )}
+
+      {state.phase === 'ready' && selectedPoint && (
+        <PointCard
+          point={selectedPoint}
+          available={available.has(selectedPoint.id)}
+          collected={game.collected.has(selectedPoint.id)}
+          multiplier={game.multiplier}
+          onCollect={game.collect}
+          onClose={() => {
+            setSelectedId(null);
+          }}
+          onNeedEnrichment={enrichNow}
         />
       )}
 

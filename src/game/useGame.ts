@@ -10,7 +10,18 @@ import {
   resetDeadline,
   type ComboState,
 } from './combo';
+import {
+  EMPTY_PROGRESS,
+  mergeProgress,
+  progressFromRecords,
+  scoreOf,
+  withRecord,
+  withReset,
+  type CollectRecord,
+  type ProgressState,
+} from './progress';
 import { clearProgress, describeLoadOutcome, loadProgress, saveProgress } from './storage';
+import { useTabSync } from './useTabSync';
 
 /** Задержка записи: серия сборов не должна давать серию записей на диск */
 const SAVE_DEBOUNCE_MS = 400;
@@ -26,7 +37,6 @@ export interface UseGameResult {
   readonly collected: ReadonlySet<string>;
   readonly multiplier: number;
   readonly frozen: boolean;
-  /** Что произошло при загрузке сохранения — для отладочной панели */
   readonly storageNote: string;
   readonly collect: (pointId: string) => void;
   readonly reset: () => void;
@@ -34,22 +44,18 @@ export interface UseGameResult {
 
 export function useGame({ points, cityName, onEvent }: UseGameParams): UseGameResult {
   // Читаем хранилище один раз при инициализации, а не в эффекте: иначе первый
-  // кадр показал бы нули, а следом дёрнулся на сохранённое
+  // кадр показал бы нули, а следом счёт дёрнулся бы на сохранённый
   const initial = useMemo(() => loadProgress(), []);
 
-  const [score, setScore] = useState(() => (initial.kind === 'ok' ? initial.progress.score : 0));
-  const [collected, setCollected] = useState<ReadonlySet<string>>(
-    () => new Set(initial.kind === 'ok' ? initial.progress.collected : []),
+  const [progress, setProgress] = useState<ProgressState>(() =>
+    initial.kind === 'ok' ? initial.progress : EMPTY_PROGRESS,
   );
   const [combo, setCombo] = useState<ComboState>(INITIAL_COMBO);
 
   /*
-   * Заморозка — отдельное состояние, а не вычисление в рендере
-   *
-   * Вариант `isFrozen(combo, Date.now())` прямо в возвращаемом объекте не
-   * только делает рендер нечистым, но и просто неверен: признак обновлялся бы
-   * лишь когда компонент перерисовывается по другой причине, и плашка могла
-   * бы висеть уже после истечения срока
+   * Заморозка — отдельное состояние, а не вычисление в рендере: иначе признак
+   * обновлялся бы лишь при случайных перерисовках, и плашка могла бы висеть
+   * уже после истечения срока
    */
   const [frozen, setFrozen] = useState(false);
 
@@ -60,10 +66,35 @@ export function useGame({ points, cityName, onEvent }: UseGameParams): UseGameRe
     onEventRef.current = onEvent;
   }, [onEvent]);
 
+  // Нужен только для ответа соседней вкладке на hello — отставание на один
+  // рендер здесь безразлично, слияние всё равно идемпотентно
+  const progressRef = useRef(progress);
+  useEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
+
+  /* --- синхронизация между вкладками -------------------------------- */
+  const sync = useTabSync({
+    onRecord: (record) => {
+      setProgress((prev) => withRecord(prev, record));
+    },
+    onReset: (at) => {
+      setProgress((prev) => withReset(prev, at));
+      setCombo(INITIAL_COMBO);
+      setFrozen(false);
+    },
+    getState: () => progressRef.current,
+    onState: (records, resetAt) => {
+      // Состояние соседа сливается с нашим, а не заменяет его: пока мы ждали
+      // ответа, здесь могли что-то собрать
+      setProgress((prev) => mergeProgress(prev, progressFromRecords(records, resetAt)));
+    },
+  });
+
   /*
-   * Комбо сбрасывается таймером, заведённым ровно на момент истечения, а не
-   * опросом по интервалу. Интервал крутился бы вхолостую всё время жизни
-   * виджета — и был бы виден в счётчике setInterval панели диагностики
+   * Комбо сбрасывается таймером на точный момент истечения, а не опросом по
+   * интервалу. Комбо намеренно НЕ синхронизируется между вкладками: это темп
+   * игры конкретного окна, а не часть прогресса
    */
   useEffect(() => {
     const deadline = resetDeadline(combo);
@@ -80,7 +111,6 @@ export function useGame({ points, cityName, onEvent }: UseGameParams): UseGameRe
     };
   }, [combo]);
 
-  /* Снятие заморозки ровно в момент её истечения */
   useEffect(() => {
     const remaining = combo.frozenUntil - Date.now();
     if (remaining <= 0) return undefined;
@@ -96,25 +126,35 @@ export function useGame({ points, cityName, onEvent }: UseGameParams): UseGameRe
   /* Сохранение с дебаунсом */
   useEffect(() => {
     const id = window.setTimeout(() => {
-      saveProgress({ score, collected: [...collected], cityName });
+      saveProgress(progress, cityName);
     }, SAVE_DEBOUNCE_MS);
     return () => {
       window.clearTimeout(id);
     };
-  }, [score, collected, cityName]);
+  }, [progress, cityName]);
+
+  const score = useMemo(() => scoreOf(progress), [progress]);
+  const collected = useMemo(() => new Set(progress.records.keys()), [progress]);
 
   const collect = useCallback(
     (pointId: string) => {
       const point = points.get(pointId);
-      if (!point || collected.has(pointId)) return;
+      if (!point || progress.records.has(pointId)) return;
 
       const now = Date.now();
       const outcome = applyCollect(combo, point.rarity, point.basePoints, now);
 
+      const record: CollectRecord = {
+        pointId,
+        awarded: outcome.awarded,
+        at: now,
+        by: sync.instanceId,
+      };
+
       setCombo(outcome.combo);
       setFrozen(isFrozen(outcome.combo, now));
-      setCollected((prev) => new Set(prev).add(pointId));
-      setScore((prev) => prev + outcome.awarded);
+      setProgress((prev) => withRecord(prev, record));
+      sync.publishRecord(record);
 
       onEventRef.current?.({
         type: 'point-collected',
@@ -124,17 +164,18 @@ export function useGame({ points, cityName, onEvent }: UseGameParams): UseGameRe
         multiplier: outcome.multiplierUsed,
       });
     },
-    [points, collected, combo],
+    [points, progress, combo, sync],
   );
 
   const reset = useCallback(() => {
+    const at = Date.now();
     clearProgress();
-    setScore(0);
-    setCollected(new Set());
+    setProgress((prev) => withReset(prev, at));
     setCombo(INITIAL_COMBO);
     setFrozen(false);
+    sync.publishReset(at);
     onEventRef.current?.({ type: 'progress-reset' });
-  }, []);
+  }, [sync]);
 
   return { score, collected, multiplier: combo.multiplier, frozen, storageNote, collect, reset };
 }

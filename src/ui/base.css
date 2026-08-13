@@ -165,3 +165,96 @@
 .pokemap-hud__button:hover {
   background: #333e56;
 }
+
+/* Карточка выбранной точки. absolute внутри виджета — не fixed */
+.pokemap-card {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 4;
+  width: 260px;
+  max-width: calc(100% - 16px);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(8, 12, 20, 0.94);
+  color: #e8eef8;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.pokemap-card__close {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(8, 12, 20, 0.7);
+  color: #dfe7f5;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pokemap-card__image {
+  display: block;
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  background: #161d2b;
+}
+
+.pokemap-card__image--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6d7c94;
+  font-size: 11px;
+}
+
+.pokemap-card__body {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pokemap-card__rarity {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pokemap-card__rarity--legendary { color: #ffcc33; }
+.pokemap-card__rarity--epic      { color: #b26bff; }
+.pokemap-card__rarity--rare      { color: #4da3ff; }
+.pokemap-card__rarity--common    { color: #8fa3c0; }
+
+.pokemap-card__title { font-size: 14px; }
+
+.pokemap-card__desc {
+  color: #9fb4d6;
+  font-size: 12px;
+}
+
+.pokemap-card__collect {
+  margin-top: 2px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 5px;
+  background: #2f6d4f;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pokemap-card__collect:hover { background: #38835e; }
+
+.pokemap-card__status {
+  margin-top: 2px;
+  color: #6d7c94;
+  font-size: 12px;
+}

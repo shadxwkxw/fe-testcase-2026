@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 
 import type { LngLat } from '../types';
@@ -14,6 +14,8 @@ export interface UsePointsResult {
   /** Растёт при каждом изменении набора точек */
   readonly version: number;
   readonly status: LoaderStatus;
+  /** Обогатить конкретную точку вне очереди — для открытой карточки */
+  readonly enrichNow: (pointId: string) => void;
 }
 
 const EMPTY_STATUS: LoaderStatus = {
@@ -102,5 +104,12 @@ export function usePoints(
     };
   }, [map, loader]);
 
-  return { points: loader.points, version, status };
+  const enrichNow = useCallback(
+    (pointId: string) => {
+      loader.enrichNow(pointId);
+    },
+    [loader],
+  );
+
+  return { points: loader.points, version, status, enrichNow };
 }
