@@ -144,3 +144,24 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+
+.pokemap-hud__spacer {
+  flex: 1;
+}
+
+.pokemap-hud__select,
+.pokemap-hud__button {
+  background: #273044;
+  color: #dfe7f5;
+  border: 1px solid #3b465e;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pokemap-hud__select:hover,
+.pokemap-hud__button:hover {
+  background: #333e56;
+}

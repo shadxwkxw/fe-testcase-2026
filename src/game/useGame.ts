@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { GamePoint } from '../data/points';
 import type { PokeMapEvent } from '../types';
@@ -10,9 +10,14 @@ import {
   resetDeadline,
   type ComboState,
 } from './combo';
+import { clearProgress, describeLoadOutcome, loadProgress, saveProgress } from './storage';
+
+/** Задержка записи: серия сборов не должна давать серию записей на диск */
+const SAVE_DEBOUNCE_MS = 400;
 
 export interface UseGameParams {
   readonly points: ReadonlyMap<string, GamePoint>;
+  readonly cityName: string;
   readonly onEvent: ((event: PokeMapEvent) => void) | undefined;
 }
 
@@ -21,12 +26,21 @@ export interface UseGameResult {
   readonly collected: ReadonlySet<string>;
   readonly multiplier: number;
   readonly frozen: boolean;
+  /** Что произошло при загрузке сохранения — для отладочной панели */
+  readonly storageNote: string;
   readonly collect: (pointId: string) => void;
+  readonly reset: () => void;
 }
 
-export function useGame({ points, onEvent }: UseGameParams): UseGameResult {
-  const [score, setScore] = useState(0);
-  const [collected, setCollected] = useState<ReadonlySet<string>>(() => new Set());
+export function useGame({ points, cityName, onEvent }: UseGameParams): UseGameResult {
+  // Читаем хранилище один раз при инициализации, а не в эффекте: иначе первый
+  // кадр показал бы нули, а следом дёрнулся на сохранённое
+  const initial = useMemo(() => loadProgress(), []);
+
+  const [score, setScore] = useState(() => (initial.kind === 'ok' ? initial.progress.score : 0));
+  const [collected, setCollected] = useState<ReadonlySet<string>>(
+    () => new Set(initial.kind === 'ok' ? initial.progress.collected : []),
+  );
   const [combo, setCombo] = useState<ComboState>(INITIAL_COMBO);
 
   /*
@@ -38,6 +52,8 @@ export function useGame({ points, onEvent }: UseGameParams): UseGameResult {
    * бы висеть уже после истечения срока
    */
   const [frozen, setFrozen] = useState(false);
+
+  const storageNote = useMemo(() => describeLoadOutcome(initial), [initial]);
 
   const onEventRef = useRef(onEvent);
   useEffect(() => {
@@ -77,6 +93,16 @@ export function useGame({ points, onEvent }: UseGameParams): UseGameResult {
     };
   }, [combo.frozenUntil]);
 
+  /* Сохранение с дебаунсом */
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      saveProgress({ score, collected: [...collected], cityName });
+    }, SAVE_DEBOUNCE_MS);
+    return () => {
+      window.clearTimeout(id);
+    };
+  }, [score, collected, cityName]);
+
   const collect = useCallback(
     (pointId: string) => {
       const point = points.get(pointId);
@@ -101,5 +127,14 @@ export function useGame({ points, onEvent }: UseGameParams): UseGameResult {
     [points, collected, combo],
   );
 
-  return { score, collected, multiplier: combo.multiplier, frozen, collect };
+  const reset = useCallback(() => {
+    clearProgress();
+    setScore(0);
+    setCollected(new Set());
+    setCombo(INITIAL_COMBO);
+    setFrozen(false);
+    onEventRef.current?.({ type: 'progress-reset' });
+  }, []);
+
+  return { score, collected, multiplier: combo.multiplier, frozen, storageNote, collect, reset };
 }
