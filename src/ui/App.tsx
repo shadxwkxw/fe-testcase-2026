@@ -5,6 +5,7 @@ import { usePoints } from '../data/usePoints';
 import { DEFAULT_COLLECT_RADIUS_METERS } from '../config';
 import { useHostGeometry } from '../map/useHostGeometry';
 import { useMapInstance } from '../map/useMapInstance';
+import { usePlayer } from '../map/usePlayer';
 import { usePointsLayer } from '../map/usePointsLayer';
 import type { PokeMapConfig } from '../types';
 import type { DisposeBag } from '../runtime/lifecycle';
@@ -34,19 +35,25 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
   });
 
   const scale = useHostGeometry(map, containerRef);
+  const collectRadiusMeters = config.collectRadiusMeters ?? DEFAULT_COLLECT_RADIUS_METERS;
+
+  const player = usePlayer({ map, start: city.center, collectRadiusMeters });
+
+  // Фокус ленивой подгрузки картинок — позиция игрока: обогащается то,
+  // до чего он реально может дойти
   const { points, version, status: pointsStatus } = usePoints(
     map,
     config.apiBaseUrl ?? DEFAULT_API_BASE_URL,
+    player.position,
   );
 
-  // Игрока ещё нет — доступных точек пока быть не может
   const { available } = usePointsLayer({
     map,
     points,
     version,
     collected: EMPTY_SET,
-    player: null,
-    collectRadiusMeters: config.collectRadiusMeters ?? DEFAULT_COLLECT_RADIUS_METERS,
+    player: player.position,
+    collectRadiusMeters,
   });
 
   useEffect(() => {

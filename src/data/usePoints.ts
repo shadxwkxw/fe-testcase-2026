@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 
 import type { LngLat } from '../types';
@@ -36,9 +36,20 @@ const EMPTY_STATUS: LoaderStatus = {
  * apiBaseUrl читается один раз при монтировании: конфиг приходит от хоста
  * вместе с mount() и по ходу жизни экземпляра не меняется
  */
-export function usePoints(map: MapLibreMap | null, apiBaseUrl: string): UsePointsResult {
+export function usePoints(
+  map: MapLibreMap | null,
+  apiBaseUrl: string,
+  focus: LngLat | null,
+): UsePointsResult {
   const [version, setVersion] = useState(0);
   const [status, setStatus] = useState<LoaderStatus>(EMPTY_STATUS);
+
+  // Фокус меняется на каждый шаг игрока. В ref, чтобы это не пересоздавало
+  // эффект и не перезапускало загрузку
+  const focusRef = useRef(focus);
+  useEffect(() => {
+    focusRef.current = focus;
+  }, [focus]);
 
   const [loader] = useState(
     () =>
@@ -64,9 +75,10 @@ export function usePoints(map: MapLibreMap | null, apiBaseUrl: string): UsePoint
       return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
     };
 
-    // Пока маркера игрока нет — приоритет обогащения от центра карты.
-    // На этапе с игроком сюда поедет его позиция
+    // Приоритет обогащения — позиция игрока. Пока его нет, центр карты
     const readFocus = (): LngLat => {
+      const explicit = focusRef.current;
+      if (explicit) return explicit;
       const c = map.getCenter();
       return [c.lng, c.lat];
     };

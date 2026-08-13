@@ -1,4 +1,9 @@
-import type { CircleLayerSpecification, ExpressionSpecification } from 'maplibre-gl';
+import type {
+  CircleLayerSpecification,
+  ExpressionSpecification,
+  FillLayerSpecification,
+  LineLayerSpecification,
+} from 'maplibre-gl';
 
 /**
  * Описания слоёв отдельно от React-обвязки
@@ -69,4 +74,22 @@ export const pointsLayerSpec: CircleLayerSpecification = {
     'circle-stroke-width': ['case', IS_AVAILABLE, 3, IS_COLLECTED, 0, 1.5],
     'circle-stroke-color': ['case', IS_AVAILABLE, '#ffffff', 'rgba(10,15,25,0.75)'],
   },
+};
+
+export const RADIUS_SOURCE_ID = 'pokemap-collect-radius';
+export const RADIUS_FILL_ID = 'pokemap-collect-radius-fill';
+export const RADIUS_LINE_ID = 'pokemap-collect-radius-line';
+
+export const radiusFillSpec: FillLayerSpecification = {
+  id: RADIUS_FILL_ID,
+  type: 'fill',
+  source: RADIUS_SOURCE_ID,
+  paint: { 'fill-color': '#4da3ff', 'fill-opacity': 0.12 },
+};
+
+export const radiusLineSpec: LineLayerSpecification = {
+  id: RADIUS_LINE_ID,
+  type: 'line',
+  source: RADIUS_SOURCE_ID,
+  paint: { 'line-color': '#4da3ff', 'line-width': 1.5, 'line-opacity': 0.6 },
 };
