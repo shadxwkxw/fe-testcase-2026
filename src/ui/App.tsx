@@ -170,7 +170,7 @@ export function App({ config, shadow }: AppProps): React.JSX.Element {
         />
       )}
 
-      {state.phase === 'ready' && (
+      {state.phase === 'ready' && __WIDGET_DIAG__ && (
         <div className="pokemap-debug">
           масштаб ×{scale.toFixed(2)} · pixelRatio {map ? map.getPixelRatio().toFixed(2) : '—'} ·
           точек {pointsStatus.total} ({pointsStatus.enriched} с карт.) · ячеек {pointsStatus.cellsLoaded} · доступно {available.size} · {game.storageNote}

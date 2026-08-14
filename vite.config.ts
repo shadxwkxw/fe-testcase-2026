@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => ({
       mode === 'production' ? 'production' : 'development',
     ),
     __WIDGET_VERSION__: JSON.stringify(pkg.version),
+    // Отладочная панель собирается только в dev; в production константа
+    // становится false и панель вырезается тряской дерева
+    __WIDGET_DIAG__: JSON.stringify(mode !== 'production'),
   },
 
   build: {

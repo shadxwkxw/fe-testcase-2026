@@ -8,9 +8,14 @@
   },
   "scripts": {
     "dev": "concurrently -k -n build,serve -c cyan,green \"vite build --watch --mode development\" \"node scripts/server.mjs\"",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run lint && tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "check:style": "esbuild scripts/check-style.ts --bundle --platform=node --format=esm --target=node22 --outfile=node_modules/.tmp/check-style.mjs && node node_modules/.tmp/check-style.mjs",
+    "check:http": "esbuild scripts/check-http.ts --bundle --platform=node --format=esm --target=node22 --outfile=node_modules/.tmp/check-http.mjs && node node_modules/.tmp/check-http.mjs",
+    "check:game": "esbuild scripts/check-game.ts --bundle --platform=node --format=esm --target=node22 --outfile=node_modules/.tmp/check-game.mjs && node node_modules/.tmp/check-game.mjs",
+    "check:data": "esbuild scripts/check-data.ts --bundle --platform=node --format=esm --target=node22 --outfile=node_modules/.tmp/check-data.mjs && node node_modules/.tmp/check-data.mjs",
+    "check": "npm run check:style && npm run check:http && npm run check:game && npm run check:data"
   },
   "repository": {
     "type": "git",
@@ -39,6 +44,7 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^6.0.5",
     "concurrently": "^10.0.4",
+    "esbuild": "^0.28.2",
     "eslint": "^10.8.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "typescript": "^6.0.3",

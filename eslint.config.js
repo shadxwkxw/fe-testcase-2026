@@ -3,12 +3,14 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 /**
- * Правило react-hooks/exhaustive-deps включено как ОШИБКА, а не
- * предупреждение: нестабильная ссылка в зависимостях эффекта здесь означает
- * карта, прыгающая на стартовый зум при каждом обновлении состояния
+ * 
+ * Правило react-hooks/exhaustive-deps ловит класс ошибок, который в проекте
+ * с императивной картой стоит дорого: нестабильная ссылка в зависимостях
+ * эффекта заставляет камеру прыгать на стартовый зум при каждом обновлении
+ * состояния. Поэтому оно здесь ошибка, а не предупреждение
  *
- * Набор recommendedTypeChecked нужен ради проверок вокруг промисов: весь
- * слой данных асинхронный, и повисший промис там стоит дорого
+ * recommendedTypeChecked включён ради проверок вокруг промисов: весь слой
+ * данных асинхронный, и повисший промис там стоит дорого
  */
 export default tseslint.config(
   { ignores: ['dist/**', 'node_modules/**', 'host/**', 'demo/**'] },
@@ -43,6 +45,16 @@ export default tseslint.config(
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
       },
+    },
+  },
+
+  {
+    // Проверочные скрипты подставляют заглушки и печатают отчёты
+    files: ['scripts/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
     },
   },
 );

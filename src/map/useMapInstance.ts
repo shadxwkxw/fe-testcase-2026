@@ -94,7 +94,9 @@ export function useMapInstance(params: UseMapInstanceParams): UseMapInstanceResu
         // Документированный сигнал готовности. Наступает после первого
         // отрисованного кадра — как и вся инициализация MapLibre, которая
         // тоже ждёт кадра (Style.loadJSON уходит в frameAsync)
-        instance.once('load', () => {
+        // void: сигнатура once() в MapLibre — объединение `this | Promise`,
+        // и с переданным слушателем возвращается `this`, но тип не сужается
+        void instance.once('load', () => {
           if (disposed || !instance) return;
           setMap(instance);
           setState({ phase: 'ready', usedFallback: resolved.usedFallback, styleUrl: resolved.url });

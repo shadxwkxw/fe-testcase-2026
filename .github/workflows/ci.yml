@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Сборка на чистой машине
+    name: Сборка и проверки
     runs-on: ubuntu-latest
 
     steps:
@@ -21,8 +21,21 @@ jobs:
       - name: Установка зависимостей
         run: npm ci
 
+      - name: Линтер
+        run: npm run lint
+
       - name: Проверка типов и сборка
         run: npm run build
+
+      # Три набора без сети: описания слоёв, сетевой клиент на локальном сервере, игровая логика
+      - name: Проверки
+        run: npm run check:style && npm run check:http && npm run check:game
+
+      # Слой данных ходит в живую Википедию и зависит от её лимитов.
+      # Сигнал полезен, но ронять сборку из-за чужого сервиса нельзя
+      - name: Слой данных (живой API, не блокирует)
+        continue-on-error: true
+        run: npm run check:data
 
       - name: Публикация бандла
         uses: actions/upload-artifact@v4
