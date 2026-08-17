@@ -1,3 +1,19 @@
+> ## Решение
+>
+> - **[PRESENTATION.md](./PRESENTATION.md)** — описание решения: ключевые
+>   архитектурные выборы, находки, что проверено и что осталось
+> - **[DECISIONS.md](./DECISIONS.md)** — подробные обоснования и инструкция
+>   по запуску
+>
+> ```bash
+> npm ci && npm run dev     # демо: http://localhost:5173/demo/index.html
+> npm run check             # 97 проверок без браузера
+> ```
+>
+> Ниже — исходный текст задания.
+
+---
+
 # Тестовое задание · Frontend (React + TypeScript)
 
 ## PokeMap Widget — встраиваемая карта-игра
